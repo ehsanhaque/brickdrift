@@ -1,30 +1,37 @@
 <!doctype html>
 <!--
-  Experimental, non-commercial fan project built with AI (Claude Code).
-  Not affiliated with, endorsed by, or sponsored by The Tetris Company or Tetris Holding, LLC.
-  Tetris® is a registered trademark of Tetris Holding, LLC.
+  Brickdrift: an experimental, non-commercial falling-block puzzle game built with AI (Claude Code).
+  Original code and artwork. Not affiliated with or endorsed by any other game or its owners.
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0b0f1a">
+<meta name="theme-color" content="#0a1a1f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="description" content="Tetris in the browser. Plays with keyboard, touch, mouse or gamepad.">
-<title>Tetris</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='8' width='6' height='6' fill='%23a855f7'/%3E%3Crect x='9' y='8' width='6' height='6' fill='%23a855f7'/%3E%3Crect x='16' y='8' width='6' height='6' fill='%23a855f7'/%3E%3Crect x='9' y='15' width='6' height='6' fill='%23a855f7'/%3E%3C/svg%3E">
+<meta name="description" content="Brickdrift, a falling-block puzzle game. Plays with keyboard, touch or gamepad.">
+<title>Brickdrift</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='2' y='13' width='9' height='9' rx='2.5' fill='%23ff7a6b'/%3E%3Crect x='13' y='13' width='9' height='9' rx='2.5' fill='%23f2c46d'/%3E%3Crect x='13' y='2' width='9' height='9' rx='2.5' fill='%235fe0b5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&display=swap">
 <style>
   :root {
-    --bg: #0b0f1a;
-    --panel: #131a2b;
-    --line: #232d47;
-    --text: #e6ebf5;
-    --muted: #8692b0;
-    --accent: #22d3ee;
-    --btn: #1a2238;
-    --btn-active: #2b3760;
+    /* Layout: board centred between hold/stats and the queue; pads frame it on touch screens. */
+    --bg: #0a1a1f;
+    --panel: #10262c;
+    --line: #1f3f47;
+    --text: #e8f3f1;
+    --muted: #7fa3a3;
+    --accent: #ff7a6b;
+    --accent-ink: #2a0d09;
+    --btn: #133038;
+    --btn-active: #1e4852;
+    --btn-edge: #2f6470;
+    --well: #08161a;
+    --display: "Bungee", "Arial Black", Impact, system-ui, sans-serif;
     --side: 132px;
   }
   * { box-sizing: border-box; }
@@ -54,10 +61,8 @@
     display: flex; align-items: center; justify-content: space-between;
     padding: 6px 12px 0;
   }
-  .title { font-weight: 800; letter-spacing: .3em; font-size: 15px; }
-  .title span:nth-child(1) { color: #ef4444; } .title span:nth-child(2) { color: #f59e0b; }
-  .title span:nth-child(3) { color: #facc15; } .title span:nth-child(4) { color: #22c55e; }
-  .title span:nth-child(5) { color: #22d3ee; } .title span:nth-child(6) { color: #a855f7; }
+  .title { font-family: var(--display); font-size: 17px; letter-spacing: .04em; color: var(--text); }
+  .title span { color: var(--accent); }
   .top-actions { display: flex; gap: 6px; }
   .icon-btn {
     width: 36px; height: 36px; display: grid; place-items: center;
@@ -129,7 +134,7 @@
     font-size: 12px; font-weight: 800; letter-spacing: .08em;
   }
   .pad button svg.i { width: 26px; height: 26px; }
-  .pad button.pressed { background: var(--btn-active); border-color: #3c4a7a; }
+  .pad button.pressed { background: var(--btn-active); border-color: var(--btn-edge); }
   [data-action=left] { grid-area: left; } [data-action=right] { grid-area: right; }
   [data-action=soft] { grid-area: down; } [data-action=cw] { grid-area: cw; }
   [data-action=ccw] { grid-area: ccw; } [data-action=hold] { grid-area: hold; }
@@ -164,7 +169,7 @@
     background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
     padding: 22px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.6);
   }
-  .card h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: .2em; }
+  .card h1 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 30px; letter-spacing: .02em; text-wrap: balance; }
   .card p { margin: 6px 0; color: var(--muted); }
   .card .big { font-size: 34px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
   .card .new-best { color: #facc15; font-weight: 800; letter-spacing: .1em; }
@@ -173,7 +178,7 @@
     padding: 12px 22px; border-radius: 12px; border: 1px solid var(--line);
     background: var(--btn); font-weight: 800; letter-spacing: .08em;
   }
-  .btn.primary { background: var(--accent); color: #062026; border-color: transparent; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
   .help { margin-top: 14px; text-align: left; font-size: 13px; color: var(--muted); line-height: 1.7; }
   .help b { color: var(--text); font-weight: 700; }
   .help kbd {
@@ -192,7 +197,7 @@
 <body>
 <div id="app">
   <header class="topbar">
-    <div class="title" aria-label="Tetris"><span>T</span><span>E</span><span>T</span><span>R</span><span>I</span><span>S</span></div>
+    <div class="title">Brick<span>drift</span></div>
     <div class="top-actions">
       <button class="icon-btn" id="btn-sound" aria-label="Toggle sound">
         <svg class="i" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path class="on" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="on" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="off" d="m22 9-6 6M16 9l6 6"/></svg>
@@ -230,7 +235,7 @@
 
 <div class="overlay" id="overlay">
   <div class="card">
-    <h1 id="ov-title">TETRIS</h1>
+    <h1 id="ov-title">BRICKDRIFT</h1>
     <div id="ov-body"></div>
     <div class="btn-row">
       <button class="btn primary" id="ov-primary">PLAY</button>
@@ -250,9 +255,8 @@
       <div>Or use the buttons below the board.</div>
     </div>
     <p class="disclaimer">
-      Experimental, non-commercial fan project built with AI (Claude Code). Not affiliated with,
-      endorsed by, or sponsored by The Tetris Company or Tetris Holding, LLC.
-      Tetris® is a registered trademark of Tetris Holding, LLC.
+      Brickdrift is an experimental, non-commercial project built with AI (Claude Code).
+      Original code and artwork; not affiliated with or endorsed by any other game or its owners.
     </p>
   </div>
 </div>
@@ -261,11 +265,12 @@
 'use strict';
 (() => {
   // ---------- Constants ----------
-  const COLS = 10, ROWS = 20, HIDDEN = 2, TOTAL = ROWS + HIDDEN;
+  const COLS = 11, ROWS = 22, HIDDEN = 2, TOTAL = ROWS + HIDDEN;
   const DAS = 160, ARR = 45, SOFT_MS = 35, LOCK_MS = 500, MAX_RESETS = 15, CLEAR_MS = 220;
   const SIDE = 132, SIDE_COMPACT = 84, GAP = 12, NARROW_TOP = 60, MAX_CELL = 44;
 
-  const COLORS = { I: '#22d3ee', J: '#3b82f6', L: '#f59e0b', O: '#facc15', S: '#22c55e', T: '#a855f7', Z: '#ef4444' };
+  const COLORS = { I: '#ff7a6b', J: '#ff8fc7', L: '#c5e86c', O: '#6cc4ff', S: '#b49cff', T: '#f2c46d', Z: '#5fe0b5' };
+  const DIM = '#3d5a5e';
   const BASE = {
     I: [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
     J: [[1,0,0],[1,1,1],[0,0,0]],
@@ -301,7 +306,7 @@
     '30': [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],   '03': [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
   };
   const LINE_SCORES = [0, 100, 300, 500, 800];
-  const LINE_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'TETRIS'];
+  const LINE_NAMES = ['', 'SINGLE', 'DOUBLE', 'TRIPLE', 'QUAD'];
 
   // ---------- DOM ----------
   const $ = id => document.getElementById(id);
@@ -311,8 +316,8 @@
   const overlay = $('overlay');
 
   const store = {
-    get(k) { try { return localStorage.getItem('tetris.' + k); } catch { return null; } },
-    set(k, v) { try { localStorage.setItem('tetris.' + k, v); } catch { /* storage unavailable */ } },
+    get(k) { try { return localStorage.getItem('brickdrift.' + k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem('brickdrift.' + k, v); } catch { /* storage unavailable */ } },
   };
 
   // ---------- State ----------
@@ -387,7 +392,7 @@
 
   function spawn(type) {
     if (!type) { type = queue.shift(); refill(); }
-    piece = { type, rot: 0, x: type === 'O' ? 4 : 3, y: 0 };
+    piece = { type, rot: 0, x: Math.ceil((COLS - BASE[type].length) / 2), y: 0 };
     if (collides(cellsOf(piece), piece.x, piece.y)) return gameOver();
     if (!grounded()) piece.y++;
     lowestY = piece.y; lockTimer = 0; lockResets = 0; gravAcc = 0;
@@ -464,12 +469,12 @@
     if (combo > 0) { pts += 50 * combo * level; label.push('COMBO ' + combo); }
     score += pts;
     if (board.every(row => row.every(c => !c) || row.every(Boolean))) { score += 2000 * level; label.push('PERFECT CLEAR'); }
-    popup(label.join(' · '), n === 4 ? '#22d3ee' : '#fff');
+    popup(label.join(' · '), n === 4 ? '#ff7a6b' : '#fff');
 
     const oldLevel = level;
     lines += n;
     level = Math.floor(lines / 10) + 1;
-    if (level > oldLevel) { popup('LEVEL ' + level, '#facc15', 0.35); setTimeout(sfx.level, 150); }
+    if (level > oldLevel) { popup('LEVEL ' + level, '#f2c46d', 0.35); setTimeout(sfx.level, 150); }
 
     clearRows = full; clearTimer = 0; state = 'clearing';
     sfx.clear(n); buzz(n === 4 ? [20, 40, 30] : 25);
@@ -755,32 +760,40 @@
     return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
   }
   const shadeCache = {};
+  function rrect(c, x, y, w, h, r) {
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r);
+    c.closePath();
+  }
+  // Rounded "sea-glass" tile: darker rim, flat face, one soft highlight.
   function drawBlock(c, x, y, s, color) {
-    const k = shadeCache[color] || (shadeCache[color] = { hi: shade(color, 0.35), lo: shade(color, -0.35) });
-    const b = Math.max(1.5, s * 0.13);
-    c.fillStyle = color; c.fillRect(x, y, s, s);
-    c.fillStyle = k.hi; c.fillRect(x, y, s, b); c.fillRect(x, y, b, s);
-    c.fillStyle = k.lo; c.fillRect(x, y + s - b, s, b); c.fillRect(x + s - b, y, b, s);
+    const k = shadeCache[color] || (shadeCache[color] = { hi: shade(color, 0.45), lo: shade(color, -0.4) });
+    const g = Math.max(1, s * 0.06), r = s * 0.24, rim = Math.max(1.5, s * 0.1);
+    c.fillStyle = k.lo; rrect(c, x + g, y + g, s - 2 * g, s - 2 * g, r); c.fill();
+    c.fillStyle = color; rrect(c, x + g, y + g, s - 2 * g, s - 2 * g - rim, r); c.fill();
+    c.fillStyle = k.hi; c.globalAlpha *= 0.7;
+    c.beginPath(); c.arc(x + s * 0.32, y + s * 0.3, s * 0.09, 0, Math.PI * 2); c.fill();
+    c.globalAlpha /= 0.7;
   }
 
   function render() {
     const s = cell, W = COLS * s, H = ROWS * s;
-    ctx.fillStyle = '#0d1322';
+    ctx.fillStyle = '#08161a';
     ctx.fillRect(0, 0, W, H);
 
-    ctx.strokeStyle = 'rgba(120,140,190,.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let x = 1; x < COLS; x++) { ctx.moveTo(x * s + 0.5, 0); ctx.lineTo(x * s + 0.5, H); }
-    for (let y = 1; y < ROWS; y++) { ctx.moveTo(0, y * s + 0.5); ctx.lineTo(W, y * s + 0.5); }
-    ctx.stroke();
+    // Dot grid at cell corners instead of ruled lines.
+    ctx.fillStyle = 'rgba(127,163,163,.22)';
+    const d = Math.max(1, s * 0.07);
+    for (let x = 1; x < COLS; x++) for (let y = 1; y < ROWS; y++) ctx.fillRect(x * s - d / 2, y * s - d / 2, d, d);
 
     if (!board) return;
     const over = state === 'over';
     for (let y = HIDDEN; y < TOTAL; y++) {
       for (let x = 0; x < COLS; x++) {
         const t = board[y][x];
-        if (t) drawBlock(ctx, x * s, (y - HIDDEN) * s, s, over ? '#4b5568' : COLORS[t]);
+        if (t) drawBlock(ctx, x * s, (y - HIDDEN) * s, s, over ? DIM : COLORS[t]);
       }
     }
 
@@ -789,12 +802,12 @@
       let gy = piece.y;
       while (!collides(cells, piece.x, gy + 1)) gy++;
       const color = COLORS[piece.type];
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = color;
-      for (const [cx, cy] of cells) if (gy + cy >= HIDDEN) ctx.fillRect((piece.x + cx) * s, (gy + cy - HIDDEN) * s, s, s);
-      ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, s * 0.06);
-      for (const [cx, cy] of cells) if (gy + cy >= HIDDEN) ctx.strokeRect((piece.x + cx) * s + 1, (gy + cy - HIDDEN) * s + 1, s - 2, s - 2);
+      // Landing marker: dashed rounded outlines.
+      ctx.globalAlpha = 0.6;
+      ctx.strokeStyle = color; ctx.lineWidth = Math.max(1, s * 0.07);
+      ctx.setLineDash([s * 0.18, s * 0.12]);
+      for (const [cx, cy] of cells) if (gy + cy >= HIDDEN) { rrect(ctx, (piece.x + cx) * s + s * 0.14, (gy + cy - HIDDEN) * s + s * 0.14, s * 0.72, s * 0.72, s * 0.2); ctx.stroke(); }
+      ctx.setLineDash([]);
       ctx.globalAlpha = 1;
       // Fade the piece slightly as the lock timer runs out.
       const fade = grounded() ? 1 - 0.35 * Math.min(1, lockTimer / LOCK_MS) : 1;
@@ -813,7 +826,7 @@
         ctx.fillStyle = `rgba(255,255,255,${0.85 * (1 - p)})`;
         ctx.fillRect(0, (y - HIDDEN) * s, W, s);
         const shrink = W * p / 2;
-        ctx.fillStyle = 'rgba(13,19,34,.9)';
+        ctx.fillStyle = 'rgba(8,22,26,.92)';
         ctx.fillRect(W / 2 - shrink, (y - HIDDEN) * s, shrink * 2, s);
       }
     }
@@ -826,7 +839,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const fs = Math.max(12, Math.round(s * 0.75));
-      ctx.font = `800 ${fs}px system-ui, -apple-system, sans-serif`;
+      ctx.font = `400 ${fs}px Bungee, "Arial Black", Impact, sans-serif`;
       const words = p.text.split(' · ');
       words.forEach((w, i) => ctx.fillText(w, W / 2, H * 0.38 - k * s * 1.5 + (i - (words.length - 1) / 2) * fs * 1.2));
       ctx.globalAlpha = 1;
@@ -851,7 +864,7 @@
       const pw = (Math.max(...xs) - minX + 1) * s, ph = (Math.max(...ys) - minY + 1) * s;
       const ox = (horizontal ? i * slotW : 0) + (slotW - pw) / 2;
       const oy = (horizontal ? 0 : i * slotH) + (slotH - ph) / 2;
-      for (const [x, y] of cells) drawBlock(c, Math.round(ox + (x - minX) * s), Math.round(oy + (y - minY) * s), s, dim ? '#4b5568' : COLORS[t]);
+      for (const [x, y] of cells) drawBlock(c, Math.round(ox + (x - minX) * s), Math.round(oy + (y - minY) * s), s, dim ? DIM : COLORS[t]);
     });
   }
 
@@ -918,7 +931,7 @@
   }
 
   board = Array.from({ length: TOTAL }, emptyRow);
-  showOverlay('TETRIS', best ? `<p>Best ${best.toLocaleString()}</p>` : '<p>Clear lines. Don\'t top out.</p>', 'PLAY', false);
+  showOverlay('BRICKDRIFT', best ? `<p>Best ${best.toLocaleString()}</p>` : '<p>Clear lines. Don\'t top out.</p>', 'PLAY', false);
   layout();
   requestAnimationFrame(frame);
 })();

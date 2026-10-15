@@ -1,8 +1,8 @@
-# Tetris
+# Brickdrift
 
-> **Disclaimer:** This is an experimental, non-commercial fan project built with AI ([Claude Code](https://claude.com/claude-code)). It is not affiliated with, endorsed by, or sponsored by The Tetris Company or Tetris Holding, LLC. Tetris® is a registered trademark of Tetris Holding, LLC. All game code in this repository was written from scratch; no original Tetris assets, code, or audio are used.
+> **Disclaimer:** Brickdrift is an experimental, non-commercial project built with AI ([Claude Code](https://claude.com/claude-code)). All code and artwork were written from scratch for this project. It is not affiliated with, endorsed by, or sponsored by the owners of any other game, including The Tetris Company or Tetris Holding, LLC. Tetris® is a registered trademark of Tetris Holding, LLC, mentioned here only to make that non-affiliation clear.
 
-A web-based Tetris that plays on desktop, phones and tablets. It's a single self-contained `index.html` with no build step and no dependencies.
+A falling-block puzzle game for desktop, phones and tablets. It's a single self-contained `index.html` with no build step and no dependencies (the display font loads from Google Fonts and falls back to a system font offline).
 
 ## Run it
 
@@ -24,9 +24,10 @@ On-screen buttons appear automatically on touch devices. The game pauses itself 
 
 ## Features
 
-- Guideline-style rules: SRS rotation with wall kicks, 7-bag randomizer, hold, ghost piece, 5-piece preview
-- Lock delay with move/rotate resets, DAS/ARR auto-repeat for held keys and buttons
-- Scoring for singles through Tetrises, back-to-back Tetris bonus, combos and perfect clears
+- An 11 × 22 well with rounded tile-style bricks, a dot-grid background and a dashed landing marker
+- Wall-kick rotation, a shuffled bag of all seven pieces, hold, and a five-piece queue
+- Lock delay with move/rotate resets, and auto-repeat for held keys and buttons
+- Scoring for singles through quads, back-to-back quad bonus, combos and perfect clears
 - Speed increases every 10 lines; best score is saved in the browser
 - Responsive layout for portrait phones, landscape phones, tablets and desktops (including notch safe areas)
 - Optional sound effects (generated with Web Audio) and vibration feedback on phones
