@@ -31,6 +31,7 @@
     --btn-active: #1e4852;
     --btn-edge: #2f6470;
     --well: #08161a;
+    --stripe: rgba(127, 163, 163, .07);
     --display: "Bungee", "Arial Black", Impact, system-ui, sans-serif;
     --side: 132px;
   }
@@ -191,6 +192,21 @@
     font-size: 11px; line-height: 1.5; color: var(--muted); text-align: left;
   }
   .help-touch { display: none; }
+  .icon-btn[hidden] { display: none; }
+
+  /* Leaderboard */
+  .card[data-view=board] .help, .card[data-view=over] .help { display: none; }
+  .you-line b, .lb-you b { color: var(--text); }
+  .board-list { list-style: none; margin: 12px 0 4px; padding: 0; text-align: left; font-variant-numeric: tabular-nums; }
+  .board-list li { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; gap: 8px; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
+  .board-list li:nth-child(odd) { background: var(--stripe); }
+  .board-list li.me { background: var(--accent); color: var(--accent-ink); font-weight: 800; }
+  .board-list .r { color: var(--muted); }
+  .board-list .me .r { color: inherit; }
+  .board-list .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board-list .s { font-weight: 700; }
+  .board-list .lb-msg { display: block; color: var(--muted); text-align: center; background: none; }
+  .lb-you { font-size: 13px; }
   body.touch .help-touch { display: block; }
   body.touch .help-keys { display: none; }
 </style>
@@ -202,6 +218,9 @@
     <div class="top-actions">
       <button class="icon-btn" id="btn-sound" aria-label="Toggle sound">
         <svg class="i" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path class="on" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="on" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="off" d="m22 9-6 6M16 9l6 6"/></svg>
+      </button>
+      <button class="icon-btn" id="btn-board" aria-label="Leaderboard" hidden>
+        <svg class="i" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
       </button>
       <button class="icon-btn" id="btn-pause" aria-label="Pause">
         <svg class="i" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>
@@ -246,7 +265,7 @@
       <div><kbd>←</kbd> <kbd>→</kbd> move &nbsp; <kbd>↓</kbd> soft drop</div>
       <div><kbd>Space</kbd> hard drop</div>
       <div><kbd>↑</kbd> / <kbd>X</kbd> rotate right &nbsp; <kbd>Z</kbd> rotate left</div>
-      <div><kbd>C</kbd> / <kbd>Shift</kbd> hold &nbsp; <kbd>P</kbd> / <kbd>Esc</kbd> pause</div>
+      <div><kbd>C</kbd> / <kbd>Shift</kbd> hold &nbsp; <kbd>P</kbd> / <kbd>Esc</kbd> pause &nbsp; <kbd>L</kbd> leaderboard</div>
       <div>Gamepads work too: D-pad, A/B rotate, bumpers hold.</div>
     </div>
     <div class="help help-touch">
@@ -510,15 +529,17 @@
     showOverlay('GAME OVER',
       `<p>Score</p><div class="big">${score.toLocaleString()}</div>` +
       (isBest && score > 0 ? '<p class="new-best">NEW BEST!</p>' : `<p>Best ${best.toLocaleString()}</p>`) +
-      `<p>Level ${level} · ${lines} lines</p>`,
-      'PLAY AGAIN', false);
+      `<p>Level ${level} · ${lines} lines</p>` +
+      (lb.on ? '<p class="you-line" id="ov-rank">Saving your score…</p>' : ''),
+      'PLAY AGAIN', lb.on ? { label: 'LEADERBOARD', run: showBoard } : null, 'over');
+    if (lb.on) submitScore(score);
   }
   function pause() {
     if (state !== 'playing' && state !== 'clearing') return;
     pausedFrom = state;
     state = 'paused';
     releaseAll();
-    showOverlay('PAUSED', `<p>Score ${score.toLocaleString()}</p>`, 'RESUME', true);
+    showOverlay('PAUSED', `<p>Score ${score.toLocaleString()}</p>`, 'RESUME', { label: 'RESTART', run: startGame }, 'pause');
   }
   function resume() {
     if (state !== 'paused') return;
@@ -530,16 +551,21 @@
     else if (state === 'paused') resume();
     else startGame();
   }
-  function showOverlay(title, html, primary, showRestart) {
+  let ovSecondary = null;
+  function showOverlay(title, html, primary, secondary = null, view = 'menu') {
+    overlay.querySelector('.card').dataset.view = view;
     $('ov-title').textContent = title;
     $('ov-body').innerHTML = html;
     $('ov-primary').textContent = primary;
-    $('ov-secondary').hidden = !showRestart;
+    $('ov-secondary').hidden = !secondary;
+    if (secondary) $('ov-secondary').textContent = secondary.label;
+    ovSecondary = secondary && secondary.run;
     overlay.classList.remove('hidden');
+    renderPlayer();
   }
   function hideOverlay() { overlay.classList.add('hidden'); }
   $('ov-primary').addEventListener('click', () => (state === 'paused' ? resume() : startGame()));
-  $('ov-secondary').addEventListener('click', startGame);
+  $('ov-secondary').addEventListener('click', () => { if (ovSecondary) ovSecondary(); });
   $('btn-pause').addEventListener('click', togglePause);
   const soundBtn = $('btn-sound');
   soundBtn.classList.toggle('muted', muted);
@@ -550,9 +576,131 @@
     if (!muted) sfx.rotate();
   });
 
+  // ---------- Leaderboard ----------
+  // Shared scores live in Supabase (see supabase/leaderboard.sql). Fill in both values from
+  // Supabase → Project Settings → API. The anon / publishable key is meant to be public:
+  // the database only lets it read names and scores and call join_game / submit_score.
+  // Leave them empty to play without a leaderboard.
+  const SUPABASE_URL = '';
+  const SUPABASE_KEY = '';
+
+  function newPlayerId() {
+    try { if (crypto.randomUUID) return crypto.randomUUID(); } catch { /* insecure context */ }
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+    const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+  // Each device is one anonymous player: a random id kept in this browser, and a random
+  // name the server picks for it. The id is never shown or shared.
+  const lb = { on: !!(SUPABASE_URL && SUPABASE_KEY), id: store.get('player') || newPlayerId(), name: store.get('name') || '', rank: null, total: null, joined: false };
+  store.set('player', lb.id);
+
+  async function lbCall(path, body) {
+    const headers = { apikey: SUPABASE_KEY };
+    if (SUPABASE_KEY.startsWith('eyJ')) headers.Authorization = 'Bearer ' + SUPABASE_KEY; // legacy anon JWT
+    if (body) headers['Content-Type'] = 'application/json';
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 8000);
+    try {
+      const res = await fetch(SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/' + path, {
+        method: body ? 'POST' : 'GET', headers, body: body ? JSON.stringify(body) : undefined, signal: ctl.signal,
+      });
+      if (!res.ok) throw new Error('Leaderboard request failed: ' + res.status);
+      return await res.json();
+    } finally { clearTimeout(timer); }
+  }
+  function setStanding(row) {
+    if (!row) return;
+    lb.name = row.name; lb.rank = row.rank; lb.total = row.total;
+    store.set('name', row.name);
+    renderPlayer();
+  }
+  // Registers this device if needed, then sends the best score not yet saved (kept in
+  // storage so a game finished offline is sent next time). Calls run one at a time.
+  let lbQueue = Promise.resolve();
+  function lbSync() {
+    const run = async () => {
+      if (!lb.on) return null;
+      try {
+        if (!lb.joined) { setStanding((await lbCall('rpc/join_game', { p_id: lb.id }))[0]); lb.joined = true; }
+        const pending = +store.get('pending') || 0;
+        if (!pending) return null;
+        const row = (await lbCall('rpc/submit_score', { p_id: lb.id, p_score: pending }))[0];
+        if ((+store.get('pending') || 0) === pending) store.set('pending', '0');
+        setStanding(row);
+        return row;
+      } catch { return undefined; } // undefined = couldn't reach the server
+    };
+    return (lbQueue = lbQueue.then(run, run));
+  }
+  function submitScore(points) {
+    if (points > 0) store.set('pending', Math.max(points, +store.get('pending') || 0));
+    lbSync().then(row => {
+      const el = $('ov-rank');
+      if (!el || state !== 'over') return;
+      if (row === undefined) el.textContent = "Couldn't reach the leaderboard. Your score will be sent next time.";
+      else if (!lb.rank) el.textContent = 'Score a point to get on the leaderboard.';
+      else {
+        el.textContent = `#${lb.rank.toLocaleString()} of ${lb.total.toLocaleString()} players` + (row && row.improved ? ' · new personal best' : '');
+      }
+    });
+  }
+  function renderPlayer() {
+    const el = $('you-line');
+    if (!el) return;
+    el.hidden = !lb.name;
+    el.textContent = 'Playing as ';
+    const b = document.createElement('b');
+    b.textContent = lb.name;
+    el.append(b);
+  }
+  async function showBoard() {
+    if (!lb.on) return;
+    if (state === 'playing' || state === 'clearing') pause();
+    const live = state === 'paused';
+    showOverlay('LEADERBOARD', '<ol class="board-list" id="lb-list"><li class="lb-msg">Loading…</li></ol><p class="lb-you" id="lb-you"></p>',
+      live ? 'RESUME' : 'PLAY', live ? { label: 'RESTART', run: startGame } : null, 'board');
+    let rows = null;
+    try {
+      await lbSync();
+      rows = await lbCall('players?select=name,best_score&best_score=gt.0&order=best_score.desc,updated_at.asc&limit=10');
+    } catch { /* shown below */ }
+    const list = $('lb-list');
+    if (!list || overlay.querySelector('.card').dataset.view !== 'board') return;
+    list.textContent = '';
+    if (!rows || !rows.length) {
+      const li = document.createElement('li');
+      li.className = 'lb-msg';
+      li.textContent = rows ? 'No scores yet. Be the first!' : "Couldn't load the leaderboard. Check your connection.";
+      list.append(li);
+    }
+    (rows || []).forEach((r, i) => {
+      const li = document.createElement('li');
+      if (r.name === lb.name) li.className = 'me';
+      for (const [cls, text] of [['r', '#' + (i + 1)], ['n', r.name], ['s', r.best_score.toLocaleString()]]) {
+        const span = document.createElement('span');
+        span.className = cls; span.textContent = text;
+        li.append(span);
+      }
+      list.append(li);
+    });
+    const you = $('lb-you');
+    if (lb.name) {
+      you.textContent = 'You are ';
+      const b = document.createElement('b');
+      b.textContent = lb.name;
+      you.append(b, lb.rank ? ` · #${lb.rank.toLocaleString()} of ${lb.total.toLocaleString()}` : ' · no score yet');
+    }
+  }
+  const boardBtn = $('btn-board');
+  boardBtn.hidden = !lb.on;
+  boardBtn.addEventListener('click', showBoard);
+
   // ---------- Input (shared by keyboard, buttons, gestures, gamepad) ----------
   function press(a) {
     if (a === 'pause') return togglePause();
+    if (a === 'board') return showBoard();
     // Don't let a mashed hard-drop key skip straight past the game-over screen.
     if ((a === 'start' || a === 'pause') && state === 'over' && performance.now() - overAt < 800) return;
     if (a === 'start') { if (state === 'menu' || state === 'over') startGame(); else if (state === 'paused') resume(); return; }
@@ -590,7 +738,7 @@
     ArrowDown: 'soft', KeyS: 'soft', Space: 'hard',
     ArrowUp: 'cw', KeyX: 'cw', KeyW: 'cw', KeyZ: 'ccw', KeyQ: 'ccw', ControlLeft: 'ccw', ControlRight: 'ccw',
     KeyC: 'hold', ShiftLeft: 'hold', ShiftRight: 'hold',
-    KeyP: 'pause', Escape: 'pause', Enter: 'start',
+    KeyP: 'pause', Escape: 'pause', Enter: 'start', KeyL: 'board',
   };
   addEventListener('keydown', e => {
     let a = KEYS[e.code];
@@ -703,7 +851,7 @@
   addEventListener('keydown', e => { if (KEYS[e.code]) setTouch(false); }, true);
 
   // Gamepad
-  const PAD_MAP = { 14: 'left', 15: 'right', 13: 'soft', 12: 'hard', 0: 'cw', 3: 'cw', 1: 'ccw', 2: 'ccw', 4: 'hold', 5: 'hold', 9: 'pause' };
+  const PAD_MAP = { 14: 'left', 15: 'right', 13: 'soft', 12: 'hard', 0: 'cw', 3: 'cw', 1: 'ccw', 2: 'ccw', 4: 'hold', 5: 'hold', 8: 'board', 9: 'pause' };
   let padPrev = {};
   function pollGamepads() {
     if (!navigator.getGamepads) return;
@@ -950,7 +1098,9 @@
   }
 
   board = Array.from({ length: TOTAL }, emptyRow);
-  showOverlay('BRICKDRIFT', best ? `<p>Best ${best.toLocaleString()}</p>` : '<p>Clear lines. Don\'t top out.</p>', 'PLAY', false);
+  showOverlay('BRICKDRIFT', (best ? `<p>Best ${best.toLocaleString()}</p>` : '<p>Clear lines. Don\'t top out.</p>') +
+    (lb.on ? '<p class="you-line" id="you-line" hidden></p>' : ''), 'PLAY');
+  lbSync();
   layout();
   requestAnimationFrame(frame);
 })();
