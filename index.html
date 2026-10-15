@@ -1,4 +1,9 @@
 <!doctype html>
+<!--
+  Experimental, non-commercial fan project built with AI (Claude Code).
+  Not affiliated with, endorsed by, or sponsored by The Tetris Company or Tetris Holding, LLC.
+  Tetris® is a registered trademark of Tetris Holding, LLC.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -175,6 +180,10 @@
     display: inline-block; min-width: 22px; padding: 0 6px; border-radius: 5px; text-align: center;
     border: 1px solid var(--line); background: var(--bg); color: var(--text); font: 600 12px/20px ui-monospace, monospace;
   }
+  .disclaimer {
+    margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line);
+    font-size: 11px; line-height: 1.5; color: var(--muted); text-align: left;
+  }
   .help-touch { display: none; }
   body.touch .help-touch { display: block; }
   body.touch .help-keys { display: none; }
@@ -240,6 +249,11 @@
       <div><b>Flick down</b> to hard drop, <b>flick up</b> to hold</div>
       <div>Or use the buttons below the board.</div>
     </div>
+    <p class="disclaimer">
+      Experimental, non-commercial fan project built with AI (Claude Code). Not affiliated with,
+      endorsed by, or sponsored by The Tetris Company or Tetris Holding, LLC.
+      Tetris® is a registered trademark of Tetris Holding, LLC.
+    </p>
   </div>
 </div>
 

@@ -1,5 +1,7 @@
 # Tetris
 
+> **Disclaimer:** This is an experimental, non-commercial fan project built with AI ([Claude Code](https://claude.com/claude-code)). It is not affiliated with, endorsed by, or sponsored by The Tetris Company or Tetris Holding, LLC. Tetris® is a registered trademark of Tetris Holding, LLC. All game code in this repository was written from scratch; no original Tetris assets, code, or audio are used.
+
 A web-based Tetris that plays on desktop, phones and tablets. It's a single self-contained `index.html` with no build step and no dependencies.
 
 ## Run it
