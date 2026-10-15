@@ -581,8 +581,8 @@
   // Supabase → Project Settings → API. The anon / publishable key is meant to be public:
   // the database only lets it read names and scores and call join_game / submit_score.
   // Leave them empty to play without a leaderboard.
-  const SUPABASE_URL = '';
-  const SUPABASE_KEY = '';
+  const SUPABASE_URL = 'https://crswcffzqcilhpywbcwc.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable__3lSuyB-aLNMcO2w0KKFtg_l_HkS7d4';
 
   function newPlayerId() {
     try { if (crypto.randomUUID) return crypto.randomUUID(); } catch { /* insecure context */ }
@@ -1099,7 +1099,7 @@
 
   board = Array.from({ length: TOTAL }, emptyRow);
   showOverlay('BRICKDRIFT', (best ? `<p>Best ${best.toLocaleString()}</p>` : '<p>Clear lines. Don\'t top out.</p>') +
-    (lb.on ? '<p class="you-line" id="you-line" hidden></p>' : ''), 'PLAY');
+    (lb.on ? '<p class="you-line" id="you-line" hidden></p>' : ''), 'PLAY', lb.on ? { label: 'LEADERBOARD', run: showBoard } : null);
   lbSync();
   layout();
   requestAnimationFrame(frame);

@@ -31,8 +31,10 @@ drop policy if exists "leaderboard is public" on public.players;
 create policy "leaderboard is public" on public.players
   for select to anon, authenticated using (true);
 
--- "Coral Otter 42": 20 x 20 x 90 = 36,000 possible names.
-create or replace function public.random_player_name()
+-- "Coral Otter 418": an adjective, an animal and a number from 10 to p_max.
+-- With p_max = 999 that's 20 x 20 x 990 = 396,000 names; join_game raises p_max if those run out.
+drop function if exists public.random_player_name();  -- older version without p_max
+create or replace function public.random_player_name(p_max bigint)
 returns text
 language sql
 volatile
@@ -45,7 +47,7 @@ as $$
          (array['Otter','Heron','Narwhal','Puffin','Seal','Kestrel','Marlin','Walrus','Gecko','Lynx',
                 'Badger','Falcon','Squid','Turtle','Manta','Orca','Pelican','Stingray','Beaver','Koala'])
            [1 + floor(random() * 20)::int]
-      || ' ' || (10 + floor(random() * 90)::int)::text;
+      || ' ' || (10 + floor(random() * (p_max - 9))::bigint)::text;
 $$;
 
 -- Name, best score and rank for one player. Rank counts only players who have scored.
@@ -82,13 +84,16 @@ begin
     raise exception 'player id is required';
   end if;
 
+  -- Try short names first. Every 10 collisions the number gets two more digits
+  -- (999, 99999, 9999999, ...), so a free name is always found.
   while not exists (select 1 from public.players p where p.id = p_id) loop
     attempts := attempts + 1;
-    if attempts > 20 then
+    if attempts > 50 then
       raise exception 'could not find a free name';
     end if;
     begin
-      insert into public.players (id, name) values (p_id, public.random_player_name());
+      insert into public.players (id, name)
+      values (p_id, public.random_player_name((power(100, (attempts - 1) / 10) * 1000)::bigint - 1));
     exception when unique_violation then
       null;  -- name already taken, or this id was registered concurrently: check and retry
     end;
@@ -139,7 +144,7 @@ end;
 $$;
 
 -- Only the two entry points are callable through the API.
-revoke execute on function public.random_player_name()               from public, anon, authenticated;
+revoke execute on function public.random_player_name(bigint)         from public, anon, authenticated;
 revoke execute on function public.player_standing(uuid)              from public, anon, authenticated;
 revoke execute on function public.join_game(uuid)                    from public;
 revoke execute on function public.submit_score(uuid, integer)        from public;

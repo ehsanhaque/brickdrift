@@ -10,12 +10,12 @@ Open `index.html` in any modern browser. To host it, serve the folder as static 
 
 ## Leaderboard
 
-Brickdrift has an optional shared leaderboard backed by [Supabase](https://supabase.com) (free tier is plenty). Players stay anonymous: each device gets a random id stored in the browser and a random name like "Coral Otter 42" chosen by the server. Only names and best scores are stored and shown.
+Brickdrift has an optional shared leaderboard backed by [Supabase](https://supabase.com) (free tier is plenty). Players stay anonymous: each device gets a random id stored in the browser and a random name like "Coral Otter 418" chosen by the server. There are 396,000 short names; if they ever run out, new names simply get a longer number, so there is no player limit. Only names and best scores are stored and shown.
 
 To turn it on:
 
 1. Create a free Supabase project.
-2. Open **SQL Editor**, paste in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), and click **Run**. It's safe to run again later.
+2. Open **SQL Editor**, paste in [`supabase/leaderboard.sql`](supabase/leaderboard.sql), and click **Run**. It's safe to run again, and running the latest version upgrades an existing setup without losing players or scores.
 3. Open **Project Settings → API** (or **Connect**) and copy the **Project URL** and the **anon** / **publishable** key.
 4. Paste them into `SUPABASE_URL` and `SUPABASE_KEY` near the leaderboard section of `index.html`.
 
