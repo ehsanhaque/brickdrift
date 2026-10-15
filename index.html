@@ -40,6 +40,7 @@
     background: var(--bg); color: var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     overscroll-behavior: none;
+    touch-action: none; /* no double-tap or pinch zoom anywhere in the game */
     -webkit-user-select: none; user-select: none;
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
@@ -165,7 +166,7 @@
   }
   .overlay.hidden { display: none; }
   .card {
-    width: min(360px, 100%); max-height: 100%; overflow: auto;
+    width: min(360px, 100%); max-height: 100%; overflow: auto; touch-action: pan-y;
     background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
     padding: 22px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.6);
   }
@@ -621,7 +622,10 @@
   // Touch gestures on the board
   let g = null;
   wrapEl.addEventListener('pointerdown', e => {
-    if (e.pointerType === 'mouse' || g) return;
+    if (e.pointerType === 'mouse') return;
+    // A new primary touch means every earlier finger is up, so a gesture still open here
+    // lost its pointerup (iOS can swallow it, e.g. when a zoom starts). Replace it.
+    if (g && !e.isPrimary) return;
     e.preventDefault();
     try { wrapEl.setPointerCapture(e.pointerId); } catch { /* ignore */ }
     const t0 = performance.now();
@@ -671,7 +675,22 @@
   }
   wrapEl.addEventListener('pointerup', e => endGesture(e, false));
   wrapEl.addEventListener('pointercancel', e => endGesture(e, true));
+  wrapEl.addEventListener('lostpointercapture', e => endGesture(e, true));
   wrapEl.addEventListener('contextmenu', e => e.preventDefault());
+
+  // iOS Safari ignores user-scalable=no, so block its zoom gestures directly:
+  // pinch (gesture* events, multi-finger touchstart) and double-tap (a second touchend
+  // within 350ms). The overlay card is left alone so its buttons and scrolling work.
+  const inCard = e => e.target instanceof Element && e.target.closest('.card');
+  const stop = e => { if (!inCard(e)) e.preventDefault(); };
+  ['gesturestart', 'gesturechange', 'gestureend', 'dblclick'].forEach(t => document.addEventListener(t, stop, { passive: false }));
+  document.addEventListener('touchstart', e => { if (e.touches.length > 1) stop(e); }, { passive: false });
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = e.timeStamp;
+    if (now - lastTouchEnd < 350) stop(e);
+    lastTouchEnd = now;
+  }, { passive: false });
 
   // Switch between touch and keyboard UI depending on what the player actually uses.
   function setTouch(on) {
